@@ -1,0 +1,66 @@
+/* ============================================================
+   TIPOGRAFIA — display titles, accent word, hierarchy
+   Referência: "Gerador de Conteúdo" com "Conteúdo" em amber.
+   ============================================================ */
+
+@layer components {
+  /* título hero de página — display bold com uma palavra em accent */
+  .display-title {
+    font-size: 2.75rem;          /* 44px */
+    line-height: 1.05;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: #fafafa;
+  }
+
+  .display-title-accent {
+    color: #EAB308;
+    background: linear-gradient(
+      135deg,
+      #FFD04A 0%,
+      #EAB308 50%,
+      #B68806 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  @media (max-width: 640px) {
+    .display-title { font-size: 2rem; }
+  }
+
+  /* label caps — microcopy em cima de cards */
+  .label-caps {
+    font-size: 0.625rem;          /* 10px */
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgb(115 115 115);      /* neutral-500 */
+    font-weight: 500;
+  }
+
+  /* eyebrow — linha curta acima do título */
+  .eyebrow {
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(234, 179, 8, 0.85);
+    font-weight: 600;
+  }
+
+  /* subtitle hero */
+  .hero-subtitle {
+    font-size: 0.95rem;
+    color: rgb(161 161 170);      /* neutral-400 */
+    line-height: 1.55;
+    max-width: 56ch;
+  }
+
+  /* numeric display — stats grandes */
+  .num-display {
+    font-size: 2.5rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    font-variant-numeric: tabular-nums;
+  }
+}

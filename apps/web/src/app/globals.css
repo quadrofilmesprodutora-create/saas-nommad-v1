@@ -1,0 +1,50 @@
+@import "tailwindcss";
+
+@import "../styles/glass.css";
+@import "../styles/animations.css";
+@import "../styles/typography.css";
+@import "../styles/dossier.css";
+
+@theme inline {
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --color-background: #050507;
+  --color-foreground: #fafafa;
+  --sidebar-width: 240px;
+  --topbar-height: 64px;
+  --accent: #EAB308;
+  --accent-glow: rgba(234, 179, 8, 0.4);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-bg: rgba(10, 10, 12, 0.7);
+}
+
+* { box-sizing: border-box; }
+
+::selection { background-color: rgb(234 179 8 / 0.3); }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: #52525b; }
+
+body {
+  background: #09090b;
+  color: #fafafa;
+  font-family: var(--font-geist-sans), Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.sidebar-width { width: var(--sidebar-width, 240px); }
+.text-accent { color: var(--accent); }
+.bg-accent { background-color: var(--accent); }
+
+/* Game Vibe Helpers */
+.text-glow-amber {
+  text-shadow: 0 0 10px rgba(234, 179, 8, 0.5);
+}
+.border-glow {
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 15px rgba(234, 179, 8, 0.1);
+}

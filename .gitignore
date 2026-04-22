@@ -1,0 +1,63 @@
+# deps
+node_modules/
+.pnp
+.pnp.js
+
+# testing
+coverage/
+
+# next.js
+.next/
+out/
+build/
+dist/
+
+# envs
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.turbo/
+
+# ide
+.vscode/
+.idea/
+*.swp
+
+# os
+.DS_Store
+Thumbs.db
+
+# supabase
+supabase/.branches/
+supabase/.temp/
+
+# vercel
+.vercel
+
+# uploads / runtime
+uploads/
+tmp/
+
+# claude local config
+.claude/
+memory/
+
+# arquivos locais não versionados
+*.rar
+*.zip
+*.txt
+!README.md
+!SETUP.md
+
+# transcrições locais de teste (manter pasta de referência)
+/test-audio/
+*.wav
+*.mp3
+!frames sistema referência/**

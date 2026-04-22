@@ -1,0 +1,139 @@
+/* ============================================================
+   ANIMAÇÕES — entrada de página, stagger, hover, loaders
+   Uso: aplicar .anim-* em containers e filhos.
+   Easing Apple-ish: cubic-bezier(0.22, 1, 0.36, 1).
+   ============================================================ */
+
+@layer utilities {
+  /* ---------- keyframes ---------- */
+  @keyframes nmd-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  @keyframes nmd-fade-up {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes nmd-fade-down {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes nmd-scale-in {
+    from { opacity: 0; transform: scale(0.96); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  @keyframes nmd-slide-right {
+    from { opacity: 0; transform: translateX(-8px); }
+    to   { opacity: 1; transform: translateX(0); }
+  }
+
+  @keyframes nmd-shimmer {
+    0%   { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  @keyframes nmd-pulse-glow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.4); }
+    50%      { box-shadow: 0 0 0 8px rgba(234, 179, 8, 0); }
+  }
+
+  @keyframes nmd-spin-slow {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  @keyframes nmd-float-subtle {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-2px); }
+  }
+
+  .anim-float {
+    animation: nmd-float-subtle 4s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+    will-change: transform;
+  }
+
+  /* ---------- utilitários one-shot ---------- */
+  .anim-fade-in   { animation: nmd-fade-in 480ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .anim-fade-up   { animation: nmd-fade-up 560ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .anim-fade-down { animation: nmd-fade-down 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .anim-scale-in  { animation: nmd-scale-in 460ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .anim-slide-right { animation: nmd-slide-right 420ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+  /* ---------- loops ---------- */
+  .anim-pulse-glow { animation: nmd-pulse-glow 2.4s ease-in-out infinite; }
+  .anim-spin-slow  { animation: nmd-spin-slow 12s linear infinite; }
+
+  /* ---------- shimmer (loading) ---------- */
+  .anim-shimmer {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.02) 0%,
+      rgba(255, 255, 255, 0.06) 50%,
+      rgba(255, 255, 255, 0.02) 100%
+    );
+    background-size: 200% 100%;
+    animation: nmd-shimmer 1.8s linear infinite;
+  }
+
+  /* ---------- stagger — container + children ----------
+     Aplique .stagger no pai; cada filho direto recebe delay incremental
+     (até 12). Combine com .anim-fade-up nos filhos (ou .stagger-item).
+  */
+  .stagger > *         { animation: nmd-fade-up 560ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .stagger > *:nth-child(1)  { animation-delay: 40ms; }
+  .stagger > *:nth-child(2)  { animation-delay: 100ms; }
+  .stagger > *:nth-child(3)  { animation-delay: 160ms; }
+  .stagger > *:nth-child(4)  { animation-delay: 220ms; }
+  .stagger > *:nth-child(5)  { animation-delay: 280ms; }
+  .stagger > *:nth-child(6)  { animation-delay: 340ms; }
+  .stagger > *:nth-child(7)  { animation-delay: 400ms; }
+  .stagger > *:nth-child(8)  { animation-delay: 460ms; }
+  .stagger > *:nth-child(9)  { animation-delay: 520ms; }
+  .stagger > *:nth-child(10) { animation-delay: 580ms; }
+  .stagger > *:nth-child(11) { animation-delay: 640ms; }
+  .stagger > *:nth-child(12) { animation-delay: 700ms; }
+
+  /* stagger lento — pra hero/headers */
+  .stagger-slow > *         { animation: nmd-fade-up 720ms cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .stagger-slow > *:nth-child(1) { animation-delay: 80ms; }
+  .stagger-slow > *:nth-child(2) { animation-delay: 180ms; }
+  .stagger-slow > *:nth-child(3) { animation-delay: 280ms; }
+  .stagger-slow > *:nth-child(4) { animation-delay: 380ms; }
+  .stagger-slow > *:nth-child(5) { animation-delay: 480ms; }
+
+  /* ---------- entrada de página (wrapper) ---------- */
+  .page-enter {
+    animation: nmd-fade-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  /* ---------- interação: tap / press ---------- */
+  .press-scale {
+    transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .press-scale:active {
+    transform: scale(0.97);
+  }
+}
+
+/* respeita redução de movimento do SO */
+@media (prefers-reduced-motion: reduce) {
+  .anim-fade-in,
+  .anim-fade-up,
+  .anim-fade-down,
+  .anim-scale-in,
+  .anim-slide-right,
+  .anim-pulse-glow,
+  .anim-spin-slow,
+  .anim-shimmer,
+  .anim-float,
+  .page-enter,
+  .stagger > *,
+  .stagger-slow > * {
+    animation: none !important;
+  }
+  .press-scale { transition: none !important; }
+}
