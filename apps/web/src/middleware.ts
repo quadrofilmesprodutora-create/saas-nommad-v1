@@ -3,9 +3,10 @@ import { createServerClient } from '@supabase/ssr'
 
 const PUBLIC_PATHS = ['/login', '/api/']
 
-// PREVIEW MODE: bypass auth pra navegar a UI sem Supabase real.
-// Quando for ligar de verdade, troque pra false.
-const PREVIEW_MODE = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder')
+// PREVIEW MODE: bypass auth quando Supabase não está configurado.
+// Ativo quando a URL está ausente ou contém 'placeholder'.
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const PREVIEW_MODE = !SUPABASE_URL || SUPABASE_URL.includes('placeholder')
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl

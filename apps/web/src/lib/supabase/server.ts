@@ -21,7 +21,8 @@ export async function createSupabaseServer() {
   )
 }
 
-const PREVIEW_MODE = process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder')
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
+const PREVIEW_MODE = !SUPABASE_URL || SUPABASE_URL.includes('placeholder')
 
 const FAKE_SESSION = {
   access_token: 'preview',
