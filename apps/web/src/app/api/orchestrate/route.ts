@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
-import { runOnboarding } from '@/lib/brain/orchestrator'
+import { runOnboarding, type OnboardingResult } from '@/lib/brain/orchestrator'
 import { requireSession } from '@/lib/supabase/server'
+import { PREVIEW_MODE, ANTHROPIC_CONFIGURED } from '@/lib/env'
+import { getDb } from '@/lib/db/client'
+import { sessions, identity, behavior, missions, missionTasks } from '@/lib/db/schema'
+import { eq, and } from 'drizzle-orm'
 
 const Body = z.object({
   rawText: z.string().min(50, 'Texto muito curto'),
@@ -9,10 +13,7 @@ const Body = z.object({
   sessionId: z.string().optional(),
 })
 
-const PREVIEW_MODE =
-  process.env.NEXT_PUBLIC_SUPABASE_URL?.includes('placeholder') ||
-  process.env.ANTHROPIC_API_KEY === 'placeholder' ||
-  !process.env.ANTHROPIC_API_KEY
+const ORCHESTRATE_PREVIEW = PREVIEW_MODE || !ANTHROPIC_CONFIGURED
 
 function previewPipeline(rawText: string) {
   return {
@@ -28,29 +29,103 @@ function previewPipeline(rawText: string) {
         'Publicar 3 reels diferentes batendo no mesmo ângulo, sem repetir formato.',
         'Responder por DM todo comentário que chegar — tratar tração como relação, não métrica.',
       ],
+      duracao_dias: 7,
       criterio_sucesso:
-        'Pelo menos 1 DM de perguntando "como contratar" ou "onde escutar mais" até o fim dos 7 dias.',
+        'Pelo menos 1 DM perguntando "como contratar" ou "onde escutar mais" até o fim dos 7 dias.',
     },
     brain: { nivel: 'intermediario', confronto: 3, degraded: true },
     _preview: true,
   }
 }
 
+async function persistOnboarding(
+  userId: string,
+  sessionId: string,
+  rawText: string,
+  result: OnboardingResult,
+) {
+  const db = getDb()
+  const delta = result.identidade_delta
+
+  await db.insert(sessions).values({
+    id: sessionId,
+    userId,
+    kind: 'onboarding',
+    inputText: rawText,
+  }).onConflictDoNothing()
+
+  await db.insert(identity).values({
+    userId,
+    essencia: (delta.essencia as string) ?? null,
+    tesesCentrais: (delta.teses_centrais as string[]) ?? [],
+    tesesSecundarias: [],
+    assuntos: [],
+    forcaMarca: (delta.forca_marca as number) ?? 0,
+    dna: (delta.dna as Record<string, string>) ?? null,
+    posicionamento: (delta.posicionamento as Record<string, string>) ?? null,
+  }).onConflictDoUpdate({
+    target: identity.userId,
+    set: {
+      essencia: (delta.essencia as string) ?? undefined,
+      tesesCentrais: (delta.teses_centrais as string[]) ?? undefined,
+      forcaMarca: (delta.forca_marca as number) ?? undefined,
+      dna: (delta.dna as Record<string, string>) ?? undefined,
+      posicionamento: (delta.posicionamento as Record<string, string>) ?? undefined,
+      updatedAt: new Date(),
+    },
+  })
+
+  await db.insert(behavior).values({
+    userId,
+    consistenciaScore: result.brain.confronto * 20,
+  }).onConflictDoUpdate({
+    target: behavior.userId,
+    set: { updatedAt: new Date() },
+  })
+
+  await db.update(missions)
+    .set({ status: 'abandoned' })
+    .where(and(eq(missions.userId, userId), eq(missions.status, 'active')))
+
+  const missionId = crypto.randomUUID()
+  await db.insert(missions).values({
+    id: missionId,
+    userId,
+    sessionId,
+    titulo: result.mission.missao,
+    descricao: result.mission.criterio_sucesso,
+    duracaoDias: result.mission.duracao_dias,
+    status: 'active',
+    confrontoNivel: result.brain.confronto,
+  })
+
+  if (result.mission.tarefas.length > 0) {
+    await db.insert(missionTasks).values(
+      result.mission.tarefas.map((descricao, i) => ({
+        missionId,
+        descricao,
+        orderIndex: i,
+      })),
+    )
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
-    await requireSession()
+    const session = await requireSession()
     const body = Body.parse(await req.json())
 
-    if (PREVIEW_MODE) {
+    if (ORCHESTRATE_PREVIEW) {
       return NextResponse.json(previewPipeline(body.rawText))
     }
 
     const sessionId = body.sessionId ?? crypto.randomUUID()
+    const userId = session.user.id
 
-    const result = await runOnboarding(
-      sessionId,
-      body.rawText,
-      body.artistName,
+    const result = await runOnboarding(sessionId, body.rawText, body.artistName)
+
+    persistOnboarding(userId, sessionId, body.rawText, result).catch((err) =>
+      console.error('[orchestrate:persist]', err instanceof Error ? err.message : err),
     )
 
     return NextResponse.json(result)
