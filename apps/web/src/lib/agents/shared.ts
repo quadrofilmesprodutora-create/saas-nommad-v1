@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { anthropic, MODELS, type AgentName } from '../anthropic'
+import { groqClients, MODELS, type AgentName } from '../groq'
 
 // ============================================================
 // Enums e tipos compartilhados
@@ -30,7 +30,6 @@ export const KanbanColuna = z.enum([
   'ideias', 'em_desenvolvimento', 'agendado', 'publicado', 'arquivado',
 ])
 
-// CleanedInput — saída do Cleaner, entrada dos 3 paralelos
 export const CleanedInputSchema = z.object({
   sessionId: z.string(),
   historia: z.string(),
@@ -69,35 +68,36 @@ export const MissionSchema = z.object({
 export type Mission = z.infer<typeof MissionSchema>
 
 // ============================================================
-// Frases proibidas (post-processing guard)
+// Frases proibidas
 // ============================================================
 
 const BANNED_PHRASES = [
-  'acredite em você',
-  'acredite em voce',
-  'confie no processo',
-  'céu é o limite',
-  'ceu e o limite',
-  'lembre-se de ser autêntico',
-  'sua arte é única',
-  'você é capaz',
-  'seja você mesmo',
-  'abrace sua jornada',
-  'o universo conspira',
-  'unique selling proposition',
-  'storytelling autêntico',
-  'storytelling autentico',
-  'branding forte',
-  'essência autêntica',
-  'essencia autentica',
-  'mindset de vencedor',
-  'desbloquear potencial',
-  'sair da zona de conforto',
+  'acredite em você', 'acredite em voce', 'confie no processo', 'céu é o limite',
+  'ceu e o limite', 'lembre-se de ser autêntico', 'sua arte é única', 'você é capaz',
+  'seja você mesmo', 'abrace sua jornada', 'o universo conspira', 'unique selling proposition',
+  'storytelling autêntico', 'storytelling autentico', 'branding forte', 'essência autêntica',
+  'essencia autentica', 'mindset de vencedor', 'desbloquear potencial', 'sair da zona de conforto',
 ]
 
 export function hasBannedPhrase(text: string): boolean {
   const normalized = text.toLowerCase()
   return BANNED_PHRASES.some((p) => normalized.includes(p))
+}
+
+// ============================================================
+// AgentError
+// ============================================================
+
+export class AgentError extends Error {
+  constructor(
+    public readonly agent: AgentName,
+    public readonly reason: 'api' | 'parse' | 'validate' | 'banned',
+    message: string,
+    public readonly cause?: unknown,
+  ) {
+    super(message)
+    this.name = 'AgentError'
+  }
 }
 
 // ============================================================
@@ -114,23 +114,9 @@ export type RunJsonOptions<T> = {
   retries?: number
 }
 
-export class AgentError extends Error {
-  constructor(
-    public readonly agent: AgentName,
-    public readonly reason: 'api' | 'parse' | 'validate' | 'banned',
-    message: string,
-    public readonly cause?: unknown,
-  ) {
-    super(message)
-    this.name = 'AgentError'
-  }
-}
-
 function extractJson(text: string): string {
-  // remove blocos ```json ... ```
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/)
   if (fenced) return fenced[1].trim()
-  // remove qualquer prefácio antes da primeira { ou [
   const firstBrace = text.search(/[\[{]/)
   if (firstBrace > 0) return text.slice(firstBrace).trim()
   return text.trim()
@@ -146,17 +132,18 @@ export async function runJsonAgent<T>({
   retries = 1,
 }: RunJsonOptions<T>): Promise<T> {
   const model = MODELS[agent]
+  const groq = groqClients[agent]
   let lastError: unknown
   let lastRaw: string | undefined
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const res = await anthropic.messages.create({
+      const res = await groq.chat.completions.create({
         model,
         max_tokens: maxTokens,
         temperature,
-        system,
         messages: [
+          { role: 'system', content: system },
           {
             role: 'user',
             content:
@@ -167,10 +154,7 @@ export async function runJsonAgent<T>({
         ],
       })
 
-      const raw = res.content
-        .filter((b) => b.type === 'text')
-        .map((b) => (b as { text: string }).text)
-        .join('\n')
+      const raw = res.choices[0]?.message?.content ?? ''
       lastRaw = raw
 
       const jsonText = extractJson(raw)
@@ -192,7 +176,7 @@ export async function runJsonAgent<T>({
 }
 
 // ============================================================
-// Runner genérico — text agents (Response, Check-in)
+// Runner genérico — text agents
 // ============================================================
 
 export type RunTextOptions = {
@@ -215,16 +199,17 @@ export async function runTextAgent({
   retries = 1,
 }: RunTextOptions): Promise<string> {
   const model = MODELS[agent]
+  const groq = groqClients[agent]
   let lastError: unknown
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const res = await anthropic.messages.create({
+      const res = await groq.chat.completions.create({
         model,
         max_tokens: maxTokens,
         temperature,
-        system,
         messages: [
+          { role: 'system', content: system },
           {
             role: 'user',
             content:
@@ -235,11 +220,7 @@ export async function runTextAgent({
         ],
       })
 
-      const text = res.content
-        .filter((b) => b.type === 'text')
-        .map((b) => (b as { text: string }).text)
-        .join('\n')
-        .trim()
+      const text = res.choices[0]?.message?.content?.trim() ?? ''
 
       if (guardBanned && hasBannedPhrase(text)) {
         lastError = new Error('banned phrase')
@@ -265,3 +246,5 @@ function truncate(s: string | undefined, max = 400): string {
   if (!s) return '<empty>'
   return s.length > max ? s.slice(0, max) + '…' : s
 }
+
+export type { AgentName }

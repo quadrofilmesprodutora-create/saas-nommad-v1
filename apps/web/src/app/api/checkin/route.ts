@@ -3,7 +3,8 @@ import { z } from 'zod'
 import { runCheckin } from '@/lib/agents/checkin'
 import { requireSession } from '@/lib/supabase/server'
 import { MissionSchema } from '@/lib/agents/shared'
-import { PREVIEW_MODE, ANTHROPIC_CONFIGURED } from '@/lib/env'
+import { PREVIEW_MODE } from '@/lib/env'
+import { GROQ_CONFIGURED } from '@/lib/groq'
 import { getDb } from '@/lib/db/client'
 import { sessions, missions, missionTasks } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
@@ -19,7 +20,7 @@ const Body = z.object({
   historico_recente_resumido: z.string().optional(),
 })
 
-const CHECKIN_PREVIEW = PREVIEW_MODE || !ANTHROPIC_CONFIGURED
+const CHECKIN_PREVIEW = PREVIEW_MODE || !GROQ_CONFIGURED
 
 async function persistCheckin(
   userId: string,

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { runOnboarding, type OnboardingResult } from '@/lib/brain/orchestrator'
 import { requireSession } from '@/lib/supabase/server'
-import { PREVIEW_MODE, ANTHROPIC_CONFIGURED } from '@/lib/env'
+import { PREVIEW_MODE } from '@/lib/env'
+import { GROQ_CONFIGURED } from '@/lib/groq'
 import { getDb } from '@/lib/db/client'
 import { sessions, identity, behavior, missions, missionTasks } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
@@ -13,7 +14,7 @@ const Body = z.object({
   sessionId: z.string().optional(),
 })
 
-const ORCHESTRATE_PREVIEW = PREVIEW_MODE || !ANTHROPIC_CONFIGURED
+const ORCHESTRATE_PREVIEW = PREVIEW_MODE || !GROQ_CONFIGURED
 
 function previewPipeline(rawText: string) {
   return {

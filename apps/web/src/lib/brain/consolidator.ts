@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { anthropic, MODELS } from '../anthropic'
+import { groqClients, MODELS } from '../groq'
 import { Nivel, Confronto } from '../agents/shared'
 import { type BrainInput, type BrainConsolidated } from './types'
 
@@ -60,21 +60,19 @@ Kind: ${input.kind}
 Consolide e retorne JSON.`
 
   try {
-    const res = await anthropic.messages.create({
+    const res = await groqClients.brain.chat.completions.create({
       model: MODELS.brain,
       max_tokens: 2048,
       temperature: 0.4,
-      system: SYSTEM,
-      messages: [{ role: 'user', content: user }],
+      messages: [
+        { role: 'system', content: SYSTEM },
+        { role: 'user', content: user },
+      ],
     })
-    const raw = res.content
-      .filter((b) => b.type === 'text')
-      .map((b) => (b as { text: string }).text)
-      .join('\n')
+    const raw = res.choices[0]?.message?.content ?? ''
     const parsed = JSON.parse(extractJson(raw))
     return BrainOutputSchema.parse(parsed)
   } catch {
-    // Degraded fallback: usa outputs diretos sem LLM consolidation
     return {
       nivel_final: input.classification.nivel,
       confronto_final: input.classification.confronto as 1 | 2 | 3 | 4 | 5,
