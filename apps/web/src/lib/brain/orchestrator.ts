@@ -5,7 +5,9 @@ import { runStrategist } from '../agents/strategist'
 import { runResponse } from '../agents/response'
 import { runMission } from '../agents/mission'
 import { consolidateBrain } from './consolidator'
+import { runDialogue } from './dialogue'
 import { type Mission } from '../agents/shared'
+import { FF_AGENT_DIALOGUE } from '../env'
 
 export type OnboardingResult = {
   response: string
@@ -64,13 +66,24 @@ export async function runOnboarding(
     frase_norte: 'Direção a definir.',
   }
 
+  // Step 2.5: agentes dialogam (critique + revise) antes da consolida\u00e7\u00e3o
+  let strategyForBrain = effectiveStrategy
+  if (FF_AGENT_DIALOGUE && analysis && strategy) {
+    try {
+      const dialogue = await runDialogue(sessionId, effectiveAnalysis, classification, effectiveStrategy)
+      strategyForBrain = dialogue.strategy
+    } catch (err) {
+      console.error('[orchestrator:dialogue]', err instanceof Error ? err.message : err)
+    }
+  }
+
   // Step 3: brain central
   const brain = await consolidateBrain({
     sessionId,
     cleaned,
     analysis: effectiveAnalysis,
     classification,
-    strategy: effectiveStrategy,
+    strategy: strategyForBrain,
     memory: existingMemory,
     kind: 'onboarding',
   })

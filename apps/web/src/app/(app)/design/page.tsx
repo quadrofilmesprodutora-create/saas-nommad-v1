@@ -1,10 +1,12 @@
 'use client'
 
 import {
-  Layers, Image as ImageIcon, Palette, Camera, Type, Download, Sparkles, Upload, Plus,
+  Layers, Image as ImageIcon, Palette, Camera, Type, Download, Upload, Plus,
 } from 'lucide-react'
 import { PageShell, PageHeader, GlassCard, Tabs } from '@/components/ui'
 import { thumbnailUrl, coverArt, photoUrl, pressPhoto } from '@/lib/placeholders'
+import { DesignGenerator } from '@/components/design/DesignGenerator'
+import { WorkerBadge } from '@/components/design/WorkerBadge'
 
 const TABS = [
   { value: 'carrossel', label: 'Carrossel',  icon: Layers },
@@ -22,6 +24,10 @@ export default function DesignPage() {
         accent="Design"
         subtitle="Carrosséis, capas, artes e press kit — tudo com a tua cara, gerado dentro do sistema."
       />
+
+      <div className="mb-4 flex justify-end">
+        <WorkerBadge />
+      </div>
 
       <Tabs tabs={TABS} variant="pill" defaultValue="carrossel">
         {(active) => {
@@ -105,34 +111,17 @@ const ESTILOS = [
 function CapasPanel() {
   return (
     <>
-      <GlassCard variant="accent" className="p-6 mb-6 anim-fade-up">
-        <div className="flex items-start gap-4">
-          <div className="w-10 h-10 rounded-lg bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center shrink-0">
-            <Sparkles size={18} className="text-yellow-500" />
-          </div>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-neutral-100 mb-1">Gerar capa de lançamento</p>
-            <p className="text-xs text-neutral-400 mb-4">
-              Descreva a faixa, o mood e as referências. A IA devolve 4 variações em alta resolução (3000×3000).
-            </p>
-            <div className="flex items-center gap-3">
-              <input
-                placeholder='Ex: "EP techno melódico, vibe noite chuvosa em Berlim"'
-                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-4 py-2.5 text-sm text-neutral-200 placeholder:text-neutral-600 focus:outline-none focus:border-yellow-500/40 transition-colors"
-                disabled
-              />
-              <button className="px-5 py-2.5 rounded-lg bg-gradient-to-b from-yellow-400 to-yellow-500 text-neutral-950 text-sm font-semibold press-scale glow-accent">
-                Gerar
-              </button>
-            </div>
-          </div>
-        </div>
-      </GlassCard>
+      <DesignGenerator
+        type="capa"
+        title="Gerar capa de lançamento"
+        description="Descreva a faixa, o mood e as referências. O render local devolve em alta resolução."
+        placeholder='Ex: "EP techno melódico, vibe noite chuvosa em Berlim"'
+      />
 
-      <p className="label-caps mb-3">Estilos disponíveis</p>
-      <div className="grid grid-cols-4 gap-3 mb-6 stagger">
+      <p className="label-caps mb-3 mt-8">Estilos de referência</p>
+      <div className="grid grid-cols-4 gap-3 stagger">
         {ESTILOS.map((e) => (
-          <GlassCard key={e.slug} floating className="p-4 cursor-pointer">
+          <GlassCard key={e.slug} floating className="p-4">
             <div className="aspect-square rounded-lg border border-white/10 mb-3 overflow-hidden relative">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -148,15 +137,6 @@ function CapasPanel() {
           </GlassCard>
         ))}
       </div>
-
-      <p className="label-caps mb-3">Suas capas</p>
-      <GlassCard className="p-12 text-center anim-fade-up">
-        <ImageIcon size={32} className="text-neutral-700 mx-auto mb-3" />
-        <p className="text-sm text-neutral-500">Nenhuma capa gerada ainda.</p>
-        <p className="text-xs text-neutral-600 mt-1">
-          Suas capas ficam salvas aqui e podem ser exportadas pro distribuidor (Spotify / Apple / Deezer).
-        </p>
-      </GlassCard>
     </>
   )
 }
@@ -177,6 +157,14 @@ const FORMATOS = [
 function ArtesPanel() {
   return (
     <>
+      <DesignGenerator
+        type="arte"
+        title="Gerar arte"
+        description="Escolha o formato (story, feed, thumbnail) e descreva o que precisa. Render local entrega no aspect correto."
+        placeholder='Ex: "anúncio de gig sexta, mood dark, neon roxo"'
+      />
+
+      <p className="label-caps mb-3 mt-8">Formatos disponíveis</p>
       <div className="grid grid-cols-3 gap-3 stagger">
         {FORMATOS.map((f) => (
           <GlassCard key={f.slug} floating className="p-0 cursor-pointer overflow-hidden">

@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import {
-  Swords, Trophy, Users, BarChart3, Plus, ChevronRight, Crown, Upload, Sparkles,
+  Swords, Trophy, Users, BarChart3, ChevronRight, Crown, Upload, Sparkles,
 } from 'lucide-react'
 import {
   PageShell, PageHeader, Tabs, Stamp, CharacterPortrait, StatusGauge,
@@ -11,6 +11,8 @@ import { avatarUrl } from '@/lib/placeholders'
 import {
   BOSSES, DIFF_COLOR, STATUS_LABEL, FASE_LABEL, FASES_ORDER, type Boss,
 } from './_data'
+import { AbrirCasoButton } from './abrir-caso-button'
+import { PsychoTrigger } from './psycho-trigger'
 
 const TABS = [
   { value: 'ativos',     label: 'Ativos',     icon: Swords,    badge: BOSSES.length },
@@ -27,11 +29,7 @@ export default function ChefoesPage() {
         title="Seus"
         accent="Chefões"
         subtitle="Cada contato real da sua carreira é um caso aberto. Cola a conversa, o sistema carimba o status e o Diogo aconselha o próximo movimento."
-        right={
-          <button className="flex items-center gap-2 px-4 py-2 rounded bg-gradient-to-b from-yellow-400 to-yellow-500 text-neutral-950 text-xs font-bold press-scale glow-accent font-mono uppercase tracking-widest">
-            <Plus size={12} /> Abrir Caso
-          </button>
-        }
+        right={<AbrirCasoButton />}
       />
 
       <Tabs tabs={TABS} variant="pill" defaultValue="ativos">
@@ -54,6 +52,7 @@ export default function ChefoesPage() {
 function AtivosPanel() {
   return (
     <div className="flex flex-col gap-6 stagger">
+      <PsychoTrigger />
       {BOSSES.map((b) => (
         <CaseFile key={b.id} boss={b} />
       ))}

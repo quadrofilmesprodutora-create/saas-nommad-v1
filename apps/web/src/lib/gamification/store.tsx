@@ -172,12 +172,55 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
   const [hydrated, setHydrated] = useState(false)
   const [reward, setReward] = useState<Reward>(null)
   const rewardTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // hidratação uma vez, no mount
+  // hidratação: localStorage primeiro (instantâneo), depois busca no servidor e mescla
   useEffect(() => {
-    setConfig(loadConfig())
+    const local = loadConfig()
+    setConfig(local)
     setHydrated(true)
+
+    // sync com servidor (se autenticado) — server-side wins em caso de conflito
+    fetch('/api/profile', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data || data._preview) return
+        const remote = (data.configJson ?? {}) as ConfigMap
+        if (Object.keys(remote).length === 0) return
+        setConfig((prev) => {
+          const merged: ConfigMap = { ...prev, ...remote }
+          saveConfig(merged)
+          return merged
+        })
+      })
+      .catch(() => {
+        // silent — offline ou unauth
+      })
   }, [])
+
+  // debounced push para o servidor quando config muda
+  useEffect(() => {
+    if (!hydrated) return
+    if (syncTimer.current) clearTimeout(syncTimer.current)
+    syncTimer.current = setTimeout(() => {
+      const stats = computeStats(config)
+      fetch('/api/profile', {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          configJson: config,
+          xp: stats.xp,
+          np: stats.np,
+          badges: stats.badges,
+        }),
+      }).catch(() => {
+        // offline / unauth — localStorage permanece source of truth local
+      })
+    }, 1200)
+    return () => {
+      if (syncTimer.current) clearTimeout(syncTimer.current)
+    }
+  }, [config, hydrated])
 
   // auto-dismiss do toast
   useEffect(() => {

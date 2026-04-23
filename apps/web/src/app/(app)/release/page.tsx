@@ -1,6 +1,11 @@
-import { Rocket, Calendar, Music } from 'lucide-react'
+import { Rocket } from 'lucide-react'
 import { PageShell, PageHeader, GlassCard } from '@/components/ui'
-import { coverArt } from '@/lib/placeholders'
+import { PREVIEW_MODE } from '@/lib/env'
+import { requireSession } from '@/lib/supabase/server'
+import { getDb } from '@/lib/db/client'
+import { releases } from '@/lib/db/schema'
+import { eq, desc } from 'drizzle-orm'
+import { ReleaseForm } from './release-form'
 
 const FASES = [
   { label: 'Teaser',   dias: 'D-30', desc: '3 posts criando universo' },
@@ -9,12 +14,43 @@ const FASES = [
   { label: 'Pós',      dias: 'D+7',  desc: 'UGC, cases, behind the scenes' },
 ]
 
-const RELEASES_MOCK = [
-  { slug: 'maquina-de-ansiedade', titulo: 'Máquina de Ansiedade', tipo: 'Single',  fase: 'Pré-save · D-14' },
-  { slug: 'liminar',               titulo: 'Liminar',              tipo: 'EP',      fase: 'Teaser · D-30'   },
+const MOCK = [
+  { id: '1', titulo: 'Máquina de Ansiedade', tipo: 'single', status: 'in_progress' },
+  { id: '2', titulo: 'Liminar', tipo: 'ep', status: 'planning' },
 ]
 
-export default function ReleasePage() {
+type Release = {
+  id: string
+  titulo: string
+  tipo: string | null
+  status: string | null
+  releaseDate?: Date | null
+}
+
+async function getReleases(): Promise<Release[]> {
+  if (PREVIEW_MODE) return MOCK
+  try {
+    const session = await requireSession()
+    const db = getDb()
+    const rows = await db.select().from(releases)
+      .where(eq(releases.userId, session.user.id))
+      .orderBy(desc(releases.createdAt))
+    return rows as Release[]
+  } catch {
+    return []
+  }
+}
+
+const STATUS_LABEL: Record<string, string> = {
+  planning: 'Planejamento',
+  in_progress: 'Em andamento',
+  released: 'Lançado',
+  post: 'Pós-lançamento',
+}
+
+export default async function ReleasePage() {
+  const list = await getReleases()
+
   return (
     <PageShell max="lg">
       <PageHeader
@@ -39,42 +75,28 @@ export default function ReleasePage() {
       </div>
 
       <p className="label-caps mb-3">Releases em andamento</p>
-      <div className="grid grid-cols-2 gap-3 mb-8 stagger">
-        {RELEASES_MOCK.map((r) => (
-          <GlassCard key={r.slug} floating className="p-4 flex items-center gap-4 cursor-pointer">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={coverArt(r.slug, 160)}
-              alt={r.titulo}
-              className="w-20 h-20 rounded-lg object-cover border border-white/10 shrink-0"
-            />
-            <div className="flex-1 min-w-0">
-              <p className="label-caps">{r.tipo}</p>
-              <p className="text-base text-neutral-100 font-semibold truncate">{r.titulo}</p>
-              <p className="text-xs text-yellow-500 mt-1 font-mono">{r.fase}</p>
-            </div>
-          </GlassCard>
-        ))}
-      </div>
+      {list.length === 0 ? (
+        <GlassCard floating className="p-6 mb-8 text-center text-sm text-neutral-400">
+          Nenhum release cadastrado ainda. Comece pelo formulário abaixo.
+        </GlassCard>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 mb-8 stagger">
+          {list.map((r) => (
+            <GlassCard key={r.id} floating className="p-4 flex items-center gap-4">
+              <div className="w-20 h-20 rounded-lg border border-white/10 bg-neutral-900 flex items-center justify-center shrink-0">
+                <Rocket size={24} className="text-yellow-500/70" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="label-caps">{r.tipo ?? 'single'}</p>
+                <p className="text-base text-neutral-100 font-semibold truncate">{r.titulo}</p>
+                <p className="text-xs text-yellow-500 mt-1 font-mono">{STATUS_LABEL[r.status ?? 'planning']}</p>
+              </div>
+            </GlassCard>
+          ))}
+        </div>
+      )}
 
-      <GlassCard floating className="p-8 flex flex-col items-center text-center anim-fade-up">
-        <div className="w-14 h-14 rounded-full bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center mb-4 glow-accent">
-          <Rocket size={22} className="text-yellow-500" />
-        </div>
-        <p className="text-base font-semibold text-neutral-100 mb-1">Cadastrar novo release</p>
-        <p className="text-sm text-neutral-400 max-w-md mb-6">
-          Cadastre sua próxima faixa / EP. O sistema cria os cards de conteúdo no Kanban e
-          agenda as peças no calendário automaticamente.
-        </p>
-        <div className="flex gap-3">
-          <button className="px-5 py-2.5 rounded-lg bg-gradient-to-b from-yellow-400 to-yellow-500 text-neutral-950 text-sm font-semibold hover:brightness-110 transition-all press-scale flex items-center gap-2 glow-accent">
-            <Music size={14} /> Novo release
-          </button>
-          <button className="px-5 py-2.5 rounded-lg glass-pill text-sm text-neutral-200 press-scale flex items-center gap-2">
-            <Calendar size={14} /> Ver timeline completa
-          </button>
-        </div>
-      </GlassCard>
+      <ReleaseForm />
     </PageShell>
   )
 }
